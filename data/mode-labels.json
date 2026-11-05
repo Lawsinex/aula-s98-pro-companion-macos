@@ -1,0 +1,17 @@
+{
+  "note": "Protocol mode id -> the effect number shown on the keyboard's own LCD. Recorded by hand on the real hardware.",
+  "recorded": "2026-08-27",
+  "labels": {
+    "2": "Effect 11",
+    "3": "Effect 12",
+    "6": "Effect 15",
+    "8": "Effect 17",
+    "13": "Effect 3",
+    "14": "Effect 4",
+    "15": "Effect 5",
+    "16": "Effect 6",
+    "17": "Effect 7",
+    "18": "Effect 8",
+    "19": "Effect 9"
+  }
+}

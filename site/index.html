@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula S98 Pro Companion: the unofficial macOS app</title>
+<meta name="description" content="An unofficial, open-source macOS app for the AULA S98 Pro keyboard: lighting, per-key colour, the keyboard's clock and presets, with no virtual machine.">
+<meta property="og:title" content="Aula S98 Pro Companion">
+<meta property="og:description" content="The Mac app AULA never made. Unofficial, open source, MIT licensed.">
+<meta property="og:image" content="https://lawsinex.github.io/aula-s98-pro-companion-macos/assets/board-zones.jpg">
+<link rel="icon" href="assets/icon.png">
+<style>
+:root{--ink:#000;--card:#0e0e10;--line:#26262b;--text:#f4f4f6;--dim:#a2a2ab;--ember:#ffc799;--max:1120px}
+*{box-sizing:border-box}
+html{background:var(--ink);color:var(--text);font:17px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0}
+a{color:var(--ember);text-decoration:none}a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--ember);outline-offset:3px;border-radius:6px}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
+nav{display:flex;align-items:center;gap:12px;padding:18px 0;font-weight:600}
+nav img{width:34px;height:34px}
+nav .links{margin-left:auto;display:flex;gap:22px;font-weight:500;font-size:15px}
+nav .links a{color:var(--dim)}nav .links a:hover{color:var(--text);text-decoration:none}
+.hero{text-align:center;padding:56px 0 20px}
+.tag{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:4px 14px;color:var(--dim);font-size:13.5px}
+h1{font-size:clamp(40px,7vw,76px);line-height:1.04;letter-spacing:-.03em;margin:20px 0 16px}
+.lede{color:var(--dim);font-size:clamp(18px,2.2vw,22px);max-width:640px;margin:0 auto 28px}
+.cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-block;padding:12px 24px;border-radius:12px;font-weight:600;border:1px solid var(--line);color:var(--text)}
+.btn:hover{text-decoration:none;border-color:#55555d}
+.btn.primary{background:var(--ember);border-color:var(--ember);color:#1a1008}
+.btn.primary:hover{background:#ffd7b5}
+.note{color:var(--dim);font-size:14px;margin-top:12px}
+.demo{margin:36px auto 0;position:relative}
+.frame{width:100%;aspect-ratio:1672/760;display:block;border:0;background:#000;cursor:crosshair}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;margin:6px 0 10px}
+.chip{appearance:none;background:var(--card);border:1px solid var(--line);color:var(--text);font:inherit;font-size:14.5px;font-weight:500;padding:8px 15px;border-radius:10px;cursor:pointer}
+.chip[aria-pressed=true]{background:#33241a;border-color:var(--ember);color:var(--ember)}
+.swatch{width:32px;height:32px;border-radius:50%;border:2px solid transparent;padding:0;cursor:pointer;outline-offset:2px}
+.swatch[aria-pressed=true]{border-color:#fff}
+.sep{width:1px;height:24px;background:var(--line);margin:0 6px}
+.hint{color:var(--dim);font-size:14px;text-align:center;margin:0}
+section{padding:72px 0 0}
+h2{font-size:clamp(28px,4vw,40px);letter-spacing:-.02em;line-height:1.15;margin:0 0 10px}
+.sub{color:var(--dim);margin:0 0 30px;max-width:640px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px}
+.card h3{margin:0 0 6px;font-size:17px}.card p{margin:0;color:var(--dim);font-size:15px}
+.shot{width:100%;display:block;height:auto}
+.shots{display:grid;grid-template-columns:1.9fr 1fr;gap:10px;align-items:center;margin-top:12px}
+@media (max-width:720px){.shots{grid-template-columns:1fr}nav .links a.hide{display:none}}
+ol{padding-left:22px;margin:0}ol li{margin:8px 0}
+pre{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow-x:auto;font:14px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+footer{margin-top:88px;padding:30px 0 50px;border-top:1px solid var(--line);color:var(--dim);font-size:14px}
+footer p{margin:0 0 8px;max-width:780px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <img src="assets/icon.png" alt=""><span>Aula S98 Pro Companion</span>
+  <div class="links"><a class="hide" href="#features">Features</a><a class="hide" href="#install">Install</a><a href="https://github.com/Lawsinex/aula-s98-pro-companion-macos">GitHub</a></div>
+</nav>
+
+<header class="hero">
+  <span class="tag">Unofficial · Open source · MIT</span>
+  <h1>The Mac app AULA never made.</h1>
+  <p class="lede">Lighting, per-key colour, the keyboard's clock and presets for the AULA S98 Pro. One small native app, with no virtual machine.</p>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/Lawsinex/aula-s98-pro-companion-macos/releases/latest">Download for macOS</a>
+    <a class="btn" href="https://github.com/Lawsinex/aula-s98-pro-companion-macos">View on GitHub</a>
+  </div>
+  <p class="note">Apple silicon · macOS 13 or newer · USB cable</p>
+</header>
+
+<div class="demo">
+  <iframe class="frame" id="board" src="demo.html" title="Interactive keyboard preview: click or drag across the keys to paint them"></iframe>
+  <div class="controls" role="group" aria-label="Preview lighting">
+    <button class="chip" data-fx="wave" aria-pressed="true">Rainbow</button>
+    <button class="chip" data-fx="breathe" aria-pressed="false">Breathing</button>
+    <button class="chip" data-fx="solid" aria-pressed="false">Solid</button>
+    <button class="chip" data-fx="paint" aria-pressed="false">Paint</button>
+    <span class="sep"></span>
+    <button class="swatch" data-c="255,199,153" style="background:#ffc799" aria-label="Peach" aria-pressed="true"></button>
+    <button class="swatch" data-c="255,59,48" style="background:#ff3b30" aria-label="Red" aria-pressed="false"></button>
+    <button class="swatch" data-c="52,199,89" style="background:#34c759" aria-label="Green" aria-pressed="false"></button>
+    <button class="swatch" data-c="0,122,255" style="background:#007aff" aria-label="Blue" aria-pressed="false"></button>
+    <button class="swatch" data-c="175,82,222" style="background:#af52de" aria-label="Purple" aria-pressed="false"></button>
+  </div>
+  <p class="hint">This is the app's real preview running in your browser. Click or drag across the keys to paint them. The effects here are a demo; the keyboard's own firmware draws the real ones.</p>
+</div>
+
+<section id="features">
+  <h2>Everything you'd boot Windows for.</h2>
+  <p class="sub">AULA's software is Windows-only. This talks to the keyboard directly over USB, and it doesn't need an account or the network.</p>
+  <div class="grid">
+    <div class="card"><h3>20 lighting modes</h3><p>Pick an effect, then set its colour, brightness, speed and direction.</p></div>
+    <div class="card"><h3>Per-key painting</h3><p>Click or drag across all 96 keys, with undo, fill, rainbow and gradients.</p></div>
+    <div class="card"><h3>Keyboard clock</h3><p>Fixes the date on the keyboard's screen and keeps it in sync.</p></div>
+    <div class="card"><h3>Presets</h3><p>Save, import and export effects and per-key layouts.</p></div>
+    <div class="card"><h3>Per-app lighting</h3><p>Bind a preset to an app, and the lighting follows you as you switch.</p></div>
+    <div class="card"><h3>Colour calibration</h3><p>Teach the app how your LEDs really look, so the screen matches the keys.</p></div>
+    <div class="card"><h3>Menu-bar quick controls</h3><p>Change the lighting in one click, or open the full editor.</p></div>
+    <div class="card"><h3>Command line</h3><p>A 36 KB tool for your scripts and shortcuts.</p></div>
+    <div class="card"><h3>Tiny and private</h3><p>About 6.5 MB, with no telemetry and no background suite.</p></div>
+  </div>
+  <div class="shots">
+    <img class="shot" loading="lazy" src="assets/lighting.png" alt="The editor's Lighting screen">
+    <img class="shot" loading="lazy" src="assets/panel.png" alt="The quick-control panel from the menu bar">
+  </div>
+</section>
+
+<section id="install">
+  <h2>Install in a minute.</h2>
+  <p class="sub">This free project isn't notarized by Apple, so macOS asks you to approve it once.</p>
+  <div class="grid">
+    <div class="card"><h3>Download</h3><ol>
+      <li><a href="https://github.com/Lawsinex/aula-s98-pro-companion-macos/releases/latest">Download the zip</a>, unzip it, and drag the app to Applications.</li>
+      <li>Open it. macOS will refuse the first time.</li>
+      <li>In <b>System Settings › Privacy &amp; Security</b>, choose <b>Open Anyway</b>.</li>
+    </ol></div>
+    <div class="card"><h3>Or build it yourself</h3>
+<pre>git clone https://github.com/Lawsinex/aula-s98-pro-companion-macos.git
+cd aula-s98-pro-companion-macos
+python3 -m pip install numpy pillow
+./scripts/install.sh</pre></div>
+  </div>
+</section>
+
+<footer>
+  <p><b>Unofficial.</b> A community project, not made by, affiliated with, or endorsed by AULA. AULA and S98 Pro are trademarks of their respective owner, used here only to say which keyboard this works with.</p>
+  <p>Use at your own risk: the app writes to your keyboard using a protocol AULA doesn't document, and it comes with no warranty. The keyboard images are AI-generated, not photographs.</p>
+  <p><a href="https://github.com/Lawsinex/aula-s98-pro-companion-macos">Source</a> · <a href="https://github.com/Lawsinex/aula-s98-pro-companion-macos/blob/main/LICENSE">MIT licence</a> · <a href="https://github.com/Lawsinex/aula-s98-pro-companion-macos/blob/main/docs/PROTOCOL.md">Protocol notes</a></p>
+</footer>
+</div>
+<script>
+(function(){
+  var frame=document.getElementById('board'),keys=[],width=1,height=1,ready=false,fx='wave',colour=[255,199,153],painted={},last=0;
+  var still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function push(colours){if(ready&&frame.contentWindow.kbSetColors)frame.contentWindow.kbSetColors(colours);}
+  function hsv(h){var i=Math.floor(h*6),f=h*6-i,q=1-f;switch(i%6){case 0:return[255,f*255,0];case 1:return[q*255,255,0];case 2:return[0,255,f*255];case 3:return[0,q*255,255];case 4:return[f*255,0,255];default:return[255,0,q*255];}}
+  function draw(t){
+    var out={};
+    keys.forEach(function(k){
+      if(fx==='wave'){var c=hsv((((k.x/width*.85-t/5000)%1)+1)%1);out[k.id]=c.map(Math.round);}
+      else if(fx==='breathe'){var b=.12+.88*Math.pow(.5+.5*Math.sin(t/900),2);out[k.id]=colour.map(function(v){return Math.round(v*b);});}
+      else if(fx==='solid'){out[k.id]=colour;}
+      else if(painted[k.id]){out[k.id]=painted[k.id];}
+    });
+    push(out);
+  }
+  function loop(t){
+    if((fx==='wave'||fx==='breathe')&&!still&&!document.hidden&&t-last>=33&&inView){last=t;draw(t);}
+    requestAnimationFrame(loop);
+  }
+  var inView=true;
+  if('IntersectionObserver' in window)new IntersectionObserver(function(e){inView=e[0].isIntersecting;}).observe(frame);
+  function setFx(name){fx=name;document.querySelectorAll('[data-fx]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.fx===name));});draw(performance.now());}
+  document.querySelectorAll('[data-fx]').forEach(function(b){b.addEventListener('click',function(){setFx(b.dataset.fx);});});
+  document.querySelectorAll('[data-c]').forEach(function(b){b.addEventListener('click',function(){
+    colour=b.dataset.c.split(',').map(Number);
+    document.querySelectorAll('[data-c]').forEach(function(o){o.setAttribute('aria-pressed',String(o===b));});
+    if(fx==='wave')setFx('solid');else draw(performance.now());
+  });});
+  addEventListener('message',function(e){
+    if(e.source!==frame.contentWindow||e.origin!==location.origin||!e.data||!e.data.kb)return;
+    var m=e.data.kb;
+    if(m.t==='ready'){ready=true;draw(performance.now());}
+    if(m.t==='paint'){if(fx!=='paint')setFx('paint');painted[m.led]=colour;draw(performance.now());}
+  });
+  fetch('layout.json').then(function(r){return r.json();}).then(function(l){keys=l.keys;width=l.width;height=l.height;draw(performance.now());requestAnimationFrame(loop);});
+})();
+</script>
+</body>
+</html>

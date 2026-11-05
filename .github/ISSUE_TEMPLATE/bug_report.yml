@@ -1,0 +1,30 @@
+name: Bug report
+description: Something doesn't work with your keyboard or the app
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: App version and macOS version
+      placeholder: 2.1.0, macOS 15.3
+    validations:
+      required: true
+  - type: input
+    id: keyboard
+    attributes:
+      label: Keyboard and connection
+      description: The output of `aula-s98 info` is ideal.
+      placeholder: S98 Pro, USB cable
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: From Settings › Reveal log in Finder. The relevant lines are enough.
+      render: text

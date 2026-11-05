@@ -1,0 +1,342 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>S98 Pro preview</title>
+<style>
+  html,body{margin:0;height:100%;background:transparent;overflow:hidden;
+    -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  #gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+  /* Hidden: InkStage draws the caption now, with the calibration state beside it,
+     and two captions on one board is one too many. The element and kbSetLabel stay
+     so the Swift bridge contract is unchanged. */
+  #label{display:none;position:fixed;left:0;right:0;bottom:6px;text-align:center;pointer-events:none;
+    color:#C9CAD2;font:11px/1.4 -apple-system,system-ui,sans-serif;letter-spacing:.06em;
+    text-shadow:0 1px 3px rgba(0,0,0,.9)}
+  #err{position:fixed;inset:0;display:none;place-items:center;color:#8B8C94;
+    font:12px/1.5 -apple-system,system-ui,sans-serif;text-align:center;padding:24px}
+</style>
+<canvas id="gl"></canvas>
+<div id="label"></div>
+<div id="err"></div>
+<script>
+"use strict";
+(function(){
+  var META = /*META*/;
+  var TEX  = /*TEX*/;          /* {base,white,own,hit} as data URIs */
+
+  var send = function(msg){
+    try { window.webkit.messageHandlers.kb.postMessage(msg); } catch(e) {}
+  };
+  function fail(e){
+    var el = document.getElementById("err");
+    el.style.display = "grid";
+    el.textContent = "Keyboard preview unavailable: " + (e && e.message || e);
+    send({t:"error", m:String(e && e.message || e)});
+  }
+
+  var IW = META.width, IH = META.height;
+  var BAR0 = META.barBase, BARN = META.barCount, STRIP = META.strip;
+
+  /* ---- the one shader pass ------------------------------------------------
+     Gw = white - base is the photograph's own light response.  Its positive
+     part takes the LED's colour, all but the fraction fA that stayed white in
+     the ON frame; its negative part is the frames' ambient difference and is
+     carried achromatically, which is what makes all-white reproduce the WHITE
+     photograph and all-off reproduce the OFF photograph, exactly.            */
+  var VS =
+    "attribute vec2 p;varying vec2 v;" +
+    "void main(){v=vec2(p.x*0.5+0.5,0.5-p.y*0.5);gl_Position=vec4(p,0.0,1.0);}";
+  var FS =
+    "precision highp float;varying vec2 v;" +
+    "uniform sampler2D uBase,uWhite,uOwn,uLut;" +
+    "void main(){" +
+    "  vec3 b=texture2D(uBase,v).rgb;" +
+    "  vec3 w=texture2D(uWhite,v).rgb;" +
+    "  vec4 o=texture2D(uOwn,v);" +
+    "  vec3 g=w-b;" +
+    "  vec3 gp=max(g,0.0), gn=max(-g,0.0);" +
+    "  float fA=o.a;" +
+    "  vec4 e1=texture2D(uLut,vec2(o.r*255.0/256.0+0.5/256.0,0.5));" +
+    "  vec4 e2=texture2D(uLut,vec2(o.g*255.0/256.0+0.5/256.0,0.5));" +
+    "  float w1=o.b, w2=1.0-o.b;" +
+    "  vec3 t1=e1.rgb+fA*(1.0-e1.rgb);" +
+    "  vec3 t2=e2.rgb+fA*(1.0-e2.rgb);" +
+    "  vec3 glow=w1*e1.a*(gp*t1-gn)+w2*e2.a*(gp*t2-gn);" +
+    "  vec3 c=clamp(b+glow,0.0,1.0);" +
+    /* Opaque. The page's own background stays transparent and the web view
+       still draws none, but the PHOTOGRAPH is opaque, because it came with its
+       own ground: it was shot on black, and the desk reflection under the board
+       is part of the picture. Matting it onto the window's light surface turned
+       that reflection into a detached blob and the frame's edge into a lumpy
+       white contour -- which is what three separate cold-eyes audits led with.
+       KeyboardView puts the same black behind it, so the board sits on the
+       ground the camera gave it. */
+    "  float a=1.0;" +
+    "  gl_FragColor=vec4(c,a);" +
+    "}";
+
+  var canvas = document.getElementById("gl");
+  var gl = canvas.getContext("webgl", {alpha:true, premultipliedAlpha:false,
+                                       antialias:false, preserveDrawingBuffer:true});
+  if (!gl) { fail(new Error("WebGL is unavailable")); return; }
+
+  function shader(type, src){
+    var s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+      throw new Error(gl.getShaderInfoLog(s));
+    return s;
+  }
+  var prog = gl.createProgram();
+  try {
+    gl.attachShader(prog, shader(gl.VERTEX_SHADER, VS));
+    gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS))
+      throw new Error(gl.getProgramInfoLog(prog));
+  } catch (e) { fail(e); return; }
+  gl.useProgram(prog);
+
+  var buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  var loc = gl.getAttribLocation(prog, "p");
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+  function makeTex(unit, img, filter){
+    var t = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0 + unit);
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
+    if (img) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+    return t;
+  }
+
+  /* the LUT: 256 entries of (unit-max colour, brightness) */
+  var lutData = new Uint8Array(256 * 4);
+  var lutTex;
+
+  var colors = {};        /* ledId -> [r,g,b], as Swift sent them */
+  var highlight = {};
+  var hitPixels = null;   /* the hitbox map, read back for hit testing */
+  var ready = false, dirty = true;
+
+  function setLut(i, r, g, b, boost){
+    var m = Math.max(r, g, b);
+    var o = i * 4;
+    if (m <= 0) { lutData[o]=0; lutData[o+1]=0; lutData[o+2]=0; lutData[o+3]=0; return; }
+    lutData[o]   = Math.round(r / m * 255);
+    lutData[o+1] = Math.round(g / m * 255);
+    lutData[o+2] = Math.round(b / m * 255);
+    lutData[o+3] = Math.min(255, Math.round(m * boost));
+  }
+
+  function toHsv(c){
+    var mx = Math.max(c[0], c[1], c[2]), mn = Math.min(c[0], c[1], c[2]);
+    if (mx - mn < 1e-6) return [0, 0, mx];
+    var cd = mx - mn, h;
+    if (mx === c[0])      h = (((c[1]-c[2])/cd) % 6 + 6) % 6;
+    else if (mx === c[1]) h = (c[2]-c[0])/cd + 2;
+    else                  h = (c[0]-c[1])/cd + 4;
+    return [h * 60, cd / mx, mx];
+  }
+  function fromHsv(h, s, v){
+    var c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c;
+    var t = [[c,x,0],[x,c,0],[0,c,x],[0,x,c],[x,0,c],[c,0,x]][Math.floor(h / 60) % 6];
+    return [t[0]+m, t[1]+m, t[2]+m];
+  }
+
+  function buildLut(){
+    lutData.fill(0);
+    var ids = META.keyIds, i, k;
+    for (i = 0; i < ids.length; i++) {
+      k = ids[i];
+      var c = colors[k];
+      if (!c) continue;
+      setLut(k, c[0], c[1], c[2], highlight[k] ? 1.5 : 1.0);
+    }
+    /* the bar: 48 virtual column emitters, each a Gaussian-weighted average of
+       the key colours above it.  The bar is its own engine in hardware; its hue
+       follows the field, which is what the photographs show.
+       Hue is averaged as a unit vector, not by averaging RGB: an RGB average
+       collapses a warm-to-cool transition through grey, and the photographs
+       keep their saturation right through the seam. */
+    var sig = META.barSigma, kx = META.keyBarX, cx = META.colX, prev = null;
+    for (var c2 = 0; c2 < BARN; c2++) {
+      var ss=0, sw=0, sv=0, gw=0, hacc=0, ref=null, bestw=-1;
+      for (i = 0; i < ids.length; i++) {
+        k = ids[i];
+        var col = colors[k];
+        var d = (kx[k] - cx[c2]) / sig;
+        var g = Math.exp(-0.5 * d * d);
+        gw += g;                              /* the whole kernel, lit or not */
+        if (!col) continue;
+        var hsv = toHsv(col);
+        sv += hsv[2] * g;                     /* value follows coverage */
+        var bness = Math.max(col[0], col[1], col[2]) / 255;
+        if (bness <= 0) continue;
+        var wgt = g * bness;                  /* hue follows the lit keys */
+        if (wgt > bestw) { bestw = wgt; ref = hsv[0]; }
+        ss += hsv[1] * wgt; sw += wgt;
+      }
+      if (sw <= 1e-9 || gw <= 1e-9) { prev = null; continue; }
+      /* Unwrap each hue onto the arc nearest the running hue, walking left to
+         right, rather than averaging unit vectors: two nearly opposite hues
+         have a resultant that collapses and flips instead of sweeping between
+         them, which puts a hard step in the middle of the bar. */
+      var base = (prev !== null) ? prev : ref;
+      for (i = 0; i < ids.length; i++) {
+        k = ids[i];
+        var col2 = colors[k];
+        if (!col2) continue;
+        var b2 = Math.max(col2[0], col2[1], col2[2]) / 255;
+        if (b2 <= 0) continue;
+        var d2 = (kx[k] - cx[c2]) / sig;
+        var w2 = Math.exp(-0.5 * d2 * d2) * b2;
+        var h2 = toHsv(col2)[0];
+        hacc += (base + (((h2 - base) % 360 + 540) % 360) - 180) * w2;
+      }
+      var hue = hacc / sw;
+      prev = hue;
+      var rgb = fromHsv(((hue % 360) + 360) % 360, ss/sw, sv/gw);
+      setLut(BAR0 + c2, rgb[0], rgb[1], rgb[2], 1.0);
+    }
+    /* the side strip follows the keys that flank it, the same way */
+    /* The strip mixes in RGB, not through the hue wheel: it is one light guide
+       fed from both sides, so opposite hues really do wash out in it, and the
+       ON frame shows exactly that where the arrow cluster meets the numpad. */
+    var sr=0, sg=0, sb=0, vs=0, gn=META.stripFlank.length;
+    for (i = 0; i < gn; i++) {
+      var fc = colors[META.stripFlank[i]];
+      if (!fc) continue;
+      var fbn = Math.max(fc[0], fc[1], fc[2]) / 255;
+      sr += fc[0]*fbn; sg += fc[1]*fbn; sb += fc[2]*fbn; vs += fbn;
+    }
+    if (vs > 1e-9 && gn > 0) {
+      var k2 = (vs / gn) / vs;
+      setLut(STRIP, sr*k2, sg*k2, sb*k2, 1.0);
+    }
+
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, lutTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, lutData);
+  }
+
+  /* The drawn rect: the photograph scaled to FILL the view, centred, with the
+     overflow cropped. One rule, applied always. The frames carry a lot of empty
+     black above the board and below its reflection, so a view given the
+     photograph's own proportions is about twice as tall as the board needs; a
+     wider view crops that dead space away instead of letterboxing it. When the
+     view is the photograph's own shape -- which is what the offscreen review
+     render asks for -- filling and fitting are the same thing, so nothing the
+     gates measure changes. */
+  var fit = {x:0, y:0, w:1, h:1};
+  function layout(){
+    var dpr = window.devicePixelRatio || 1;
+    var vw = Math.max(1, Math.round(canvas.clientWidth * dpr));
+    var vh = Math.max(1, Math.round(canvas.clientHeight * dpr));
+    if (canvas.width !== vw || canvas.height !== vh) { canvas.width = vw; canvas.height = vh; }
+    var s = Math.max(vw / IW, vh / IH);
+    fit.w = IW * s; fit.h = IH * s;
+    fit.x = (vw - fit.w) / 2; fit.y = (vh - fit.h) / 2;
+  }
+
+  function draw(){
+    if (!ready) return;
+    layout();
+    buildLut();
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.viewport(Math.round(fit.x), Math.round(canvas.height - fit.y - fit.h),
+                Math.round(fit.w), Math.round(fit.h));
+    gl.uniform1i(gl.getUniformLocation(prog, "uBase"), 0);
+    gl.uniform1i(gl.getUniformLocation(prog, "uWhite"), 1);
+    gl.uniform1i(gl.getUniformLocation(prog, "uOwn"), 2);
+    gl.uniform1i(gl.getUniformLocation(prog, "uLut"), 3);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    dirty = false;
+  }
+
+  /* ---- hit testing: one read of the hitbox map --------------------------- */
+  function ledAt(cssX, cssY){
+    if (!hitPixels) return null;
+    var dpr = window.devicePixelRatio || 1;
+    var px = cssX * dpr, py = cssY * dpr;
+    var u = (px - fit.x) / fit.w, w = (py - fit.y) / fit.h;
+    if (u < 0 || u >= 1 || w < 0 || w >= 1) return null;
+    var ix = Math.min(IW - 1, Math.max(0, Math.floor(u * IW)));
+    var iy = Math.min(IH - 1, Math.max(0, Math.floor(w * IH)));
+    var id = hitPixels[(iy * IW + ix) * 4];
+    return id > 0 ? id : null;
+  }
+
+  var painting = false, lastPainted = null;
+  canvas.addEventListener("mousedown", function(ev){
+    var id = ledAt(ev.clientX, ev.clientY);
+    painting = true; lastPainted = null;
+    if (id !== null) { lastPainted = id; send({t:"paint", led:id}); }
+    ev.preventDefault();
+  });
+  window.addEventListener("mousemove", function(ev){
+    if (!painting) return;
+    var id = ledAt(ev.clientX, ev.clientY);
+    if (id !== null && id !== lastPainted) { lastPainted = id; send({t:"paint", led:id}); }
+  });
+  window.addEventListener("mouseup", function(){
+    if (!painting) return;
+    painting = false; lastPainted = null; send({t:"paintEnd"});
+  });
+  window.addEventListener("resize", function(){ dirty = true; draw(); });
+
+  /* ---- load the textures, then go live ---------------------------------- */
+  function loadImage(src){
+    return new Promise(function(res, rej){
+      var im = new Image();
+      im.onload = function(){ res(im); };
+      im.onerror = function(){ rej(new Error("texture failed to decode")); };
+      im.src = src;
+    });
+  }
+
+  Promise.all([loadImage(TEX.base), loadImage(TEX.white),
+               loadImage(TEX.own),  loadImage(TEX.hit)]).then(function(im){
+    makeTex(0, im[0], gl.LINEAR);
+    makeTex(1, im[1], gl.LINEAR);
+    makeTex(2, im[2], gl.NEAREST);       /* ids must not be interpolated */
+    gl.activeTexture(gl.TEXTURE3);
+    lutTex = makeTex(3, null, gl.NEAREST);
+
+    /* read the hitbox map back into a typed array for hit testing */
+    var cv = document.createElement("canvas");
+    cv.width = IW; cv.height = IH;
+    var ctx = cv.getContext("2d", {willReadFrequently:true});
+    ctx.drawImage(im[3], 0, 0);
+    hitPixels = ctx.getImageData(0, 0, IW, IH).data;
+
+    ready = true;
+    draw();
+    send({t:"ready"});
+  }).catch(fail);
+
+  /* ---- the bridge Swift already speaks ---------------------------------- */
+  window.kbSetColors = function(j){
+    var o = (typeof j === "string") ? JSON.parse(j) : j;
+    colors = {};
+    for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) colors[+k] = o[k];
+    dirty = true; draw();
+  };
+  window.kbSetHighlight = function(j){
+    var a = (typeof j === "string") ? JSON.parse(j) : j;
+    highlight = {};
+    for (var i = 0; i < a.length; i++) highlight[+a[i]] = true;
+    dirty = true; draw();
+  };
+  window.kbSetLabel = function(s){ document.getElementById("label").textContent = s || ""; };
+  window.kbResetCamera = function(){ /* the camera is the photograph's */ };
+  window.kbRenderNow  = function(){ draw(); return ready ? 1 : 0; };
+  window.__kb3d_probe = function(x, y){ return ledAt(x, y); };
+})();
+</script>

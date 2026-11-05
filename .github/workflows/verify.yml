@@ -1,0 +1,21 @@
+name: Verify
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      # decompose.py and the preview gates read and write images with numpy and
+      # Pillow. viewer/photo/ is not committed, so a fresh checkout always runs
+      # the decomposition and needs them.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install gate dependencies
+        run: python3 -m pip install numpy pillow
+      - name: Verify native app and CLI
+        run: ./scripts/verify.sh

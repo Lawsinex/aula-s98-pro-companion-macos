@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key><string>Aula S98 Pro Companion</string>
+  <key>CFBundleDisplayName</key><string>Aula S98 Pro Companion</string>
+  <key>CFBundleIdentifier</key><string>io.github.lawsinex.aula-s98-pro-companion</string>
+  <key>CFBundleVersion</key><string>3</string>
+  <key>CFBundleShortVersionString</key><string>2.1.0</string>
+  <key>CFBundleExecutable</key><string>Aula S98 Pro Companion</string>
+  <key>CFBundleIconFile</key><string>AppIcon</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>LSMinimumSystemVersion</key><string>13.0</string>
+  <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
+  <key>LSMultipleInstancesProhibited</key><true/>
+  <key>NSQuitAlwaysKeepsWindows</key><false/>
+  <key>NSHighResolutionCapable</key><true/>
+  <key>NSPrincipalClass</key><string>NSApplication</string>
+  <!-- Menu-bar app by default: no Dock icon and no window at launch. Settings
+       can switch the activation policy to .regular at runtime, which is the way
+       in when the menu bar is too full to reach. -->
+  <key>LSUIElement</key><true/>
+</dict>
+</plist>
