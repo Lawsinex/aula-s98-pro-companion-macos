@@ -22,7 +22,7 @@ nav{display:flex;align-items:center;gap:12px;padding:18px 0;font-weight:600}
 nav img{width:34px;height:34px}
 nav .links{margin-left:auto;display:flex;gap:22px;font-weight:500;font-size:15px}
 nav .links a{color:var(--dim)}nav .links a:hover{color:var(--text);text-decoration:none}
-.hero{text-align:center;padding:56px 0 20px}
+.hero{text-align:center;padding:28px 0 0}
 .tag{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:4px 14px;color:var(--dim);font-size:13.5px}
 h1{font-size:clamp(40px,7vw,76px);line-height:1.04;letter-spacing:-.03em;margin:20px 0 16px}
 .lede{color:var(--dim);font-size:clamp(18px,2.2vw,22px);max-width:640px;margin:0 auto 28px}
@@ -32,7 +32,7 @@ h1{font-size:clamp(40px,7vw,76px);line-height:1.04;letter-spacing:-.03em;margin:
 .btn.primary{background:var(--ember);border-color:var(--ember);color:#1a1008}
 .btn.primary:hover{background:#ffd7b5}
 .note{color:var(--dim);font-size:14px;margin-top:12px}
-.demo{margin:36px auto 0;position:relative}
+.demo{margin:8px auto 0;position:relative}
 .frame{width:100%;aspect-ratio:1672/760;display:block;border:0;background:#000;cursor:crosshair}
 .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;margin:6px 0 10px}
 .chip{appearance:none;background:var(--card);border:1px solid var(--line);color:var(--text);font:inherit;font-size:14.5px;font-weight:500;padding:8px 15px;border-radius:10px;cursor:pointer}
@@ -136,7 +136,7 @@ python3 -m pip install numpy pillow
 </div>
 <script>
 (function(){
-  var frame=document.getElementById('board'),keys=[],width=1,height=1,ready=false,fx='wave',colour=[255,199,153],painted={},last=0;
+  var frame=document.getElementById('board'),keys=[],width=1,height=1,ready=false,fx='wave',colour=[255,199,153],painted={},shown={},last=0;
   var still=matchMedia('(prefers-reduced-motion: reduce)').matches;
   function push(colours){if(ready&&frame.contentWindow.kbSetColors)frame.contentWindow.kbSetColors(colours);}
   function hsv(h){var i=Math.floor(h*6),f=h*6-i,q=1-f;switch(i%6){case 0:return[255,f*255,0];case 1:return[q*255,255,0];case 2:return[0,255,f*255];case 3:return[0,q*255,255];case 4:return[f*255,0,255];default:return[255,0,q*255];}}
@@ -148,7 +148,7 @@ python3 -m pip install numpy pillow
       else if(fx==='solid'){out[k.id]=colour;}
       else if(painted[k.id]){out[k.id]=painted[k.id];}
     });
-    push(out);
+    shown=out;push(out);
   }
   function loop(t){
     if((fx==='wave'||fx==='breathe')&&!still&&!document.hidden&&t-last>=33&&inView){last=t;draw(t);}
@@ -156,7 +156,7 @@ python3 -m pip install numpy pillow
   }
   var inView=true;
   if('IntersectionObserver' in window)new IntersectionObserver(function(e){inView=e[0].isIntersecting;}).observe(frame);
-  function setFx(name){fx=name;document.querySelectorAll('[data-fx]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.fx===name));});draw(performance.now());}
+  function setFx(name){if(name==='paint'&&fx!=='paint')painted=Object.assign({},shown);fx=name;document.querySelectorAll('[data-fx]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.fx===name));});draw(performance.now());}
   document.querySelectorAll('[data-fx]').forEach(function(b){b.addEventListener('click',function(){setFx(b.dataset.fx);});});
   document.querySelectorAll('[data-c]').forEach(function(b){b.addEventListener('click',function(){
     colour=b.dataset.c.split(',').map(Number);
