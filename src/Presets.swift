@@ -331,7 +331,7 @@ enum Paint {
     static func rainbowHorizontal() -> [Int: RGB8] {
         let w = max(1, kLayoutSize.width)
         return Dictionary(uniqueKeysWithValues: kKeyCaps.map {
-            ($0.id, hsv(($0.x + $0.w / 2) / w * 360))
+            ($0.id, hsv(Double(($0.x + $0.w / 2) / w) * 360))
         })
     }
 
